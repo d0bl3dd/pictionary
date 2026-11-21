@@ -1,0 +1,282 @@
+/* =========================================================
+   ESTADO DEL JUEGO
+   ========================================================= */
+const state = {
+  players: ["Jugador 1", "Jugador 2"],
+  scores: [0, 0],
+  pointsToWin: 15,
+  turnSeconds: 60,
+  activeCats: Object.keys(WORD_BANK),
+  usedWords: new Set(),
+  turnCount: 0,        // cuenta total de turnos jugados
+  currentDrawerIdx: 0, // índice en state.players de quien dibuja este turno
+  currentWord: "",
+  currentCatKey: "",
+  timer: null,
+  timeLeft: 0,
+  roundResolved: false,
+  history: []
+};
+
+const $ = (sel) => document.querySelector(sel);
+const $all = (sel) => document.querySelectorAll(sel);
+
+function showScreen(id){
+  $all(".screen").forEach(s => s.classList.remove("active"));
+  $("#" + id).classList.add("active");
+}
+
+/* =========================================================
+   PANTALLA DE CONFIGURACIÓN
+   ========================================================= */
+function buildCatGrid(){
+  const grid = $("#catGrid");
+  grid.innerHTML = "";
+  Object.entries(WORD_BANK).forEach(([key, cat]) => {
+    const btn = document.createElement("button");
+    btn.className = "cat-chip selected";
+    btn.dataset.key = key;
+    btn.textContent = cat.label;
+    btn.addEventListener("click", () => {
+      btn.classList.toggle("selected");
+      const anySelected = $all(".cat-chip.selected").length > 0;
+      if (!anySelected){ btn.classList.add("selected"); } // al menos una categoría activa
+    });
+    grid.appendChild(btn);
+  });
+}
+buildCatGrid();
+
+function wireChipGroup(groupId, onPick){
+  $all(`#${groupId} .chip`).forEach(chip => {
+    chip.addEventListener("click", () => {
+      $all(`#${groupId} .chip`).forEach(c => c.classList.remove("selected"));
+      chip.classList.add("selected");
+      onPick(parseInt(chip.dataset.val, 10));
+    });
+  });
+}
+wireChipGroup("pointsGroup", (v) => state.pointsToWin = v);
+wireChipGroup("timeGroup", (v) => state.turnSeconds = v);
+
+$("#startBtn").addEventListener("click", () => {
+  const n1 = $("#p1name").value.trim() || "Jugador 1";
+  const n2 = $("#p2name").value.trim() || "Jugador 2";
+  state.players = [n1, n2];
+  state.scores = [0, 0];
+  state.usedWords = new Set();
+  state.turnCount = 0;
+  state.currentDrawerIdx = 0;
+  state.history = [];
+  state.activeCats = Array.from($all(".cat-chip.selected")).map(c => c.dataset.key);
+  if (state.activeCats.length === 0) state.activeCats = Object.keys(WORD_BANK);
+  startTurnFlow();
+});
+
+/* =========================================================
+   FLUJO DE TURNO: pasar teléfono -> ver palabra -> dibujar -> resultado
+   ========================================================= */
+function pickWord(){
+  const catKey = state.activeCats[Math.floor(Math.random() * state.activeCats.length)];
+  const pool = WORD_BANK[catKey].words.filter(w => !state.usedWords.has(w));
+  const list = pool.length ? pool : WORD_BANK[catKey].words; // si se agotaron, reinicia esa categoría
+  if (!pool.length){ WORD_BANK[catKey].words.forEach(w => state.usedWords.delete(w)); }
+  const word = list[Math.floor(Math.random() * list.length)];
+  state.usedWords.add(word);
+  state.currentWord = word;
+  state.currentCatKey = catKey;
+}
+
+function scorePillHTML(){
+  return state.players.map((p, i) => `${p}: ${state.scores[i]} pts`).join("   •   ");
+}
+
+function startTurnFlow(){
+  pickWord();
+  const drawerName = state.players[state.currentDrawerIdx];
+  $("#passName").textContent = drawerName;
+  $("#passScores").textContent = scorePillHTML();
+  showScreen("screen-pass");
+}
+
+$("#passReadyBtn").addEventListener("click", () => {
+  $("#revealWord").innerHTML = `<span class="cat-label" style="display:block;font-size:11px;opacity:.7;margin-bottom:6px;text-transform:uppercase;letter-spacing:1.5px;">${WORD_BANK[state.currentCatKey].label}</span>${state.currentWord}`;
+  showScreen("screen-reveal");
+});
+
+$("#skipWordBtn").addEventListener("click", () => {
+  pickWord();
+  $("#revealWord").innerHTML = `<span class="cat-label" style="display:block;font-size:11px;opacity:.7;margin-bottom:6px;text-transform:uppercase;letter-spacing:1.5px;">${WORD_BANK[state.currentCatKey].label}</span>${state.currentWord}`;
+});
+
+$("#goDrawBtn").addEventListener("click", () => {
+  beginDrawing();
+});
+
+/* =========================================================
+   LIENZO DE DIBUJO
+   ========================================================= */
+let ctx, drawing = false, lastX = 0, lastY = 0, currentColor = "#2b2420", currentSize = 6, isEraser = false;
+
+function setupCanvas(){
+  const canvas = $("#board");
+  const wrap = canvas.parentElement;
+  const ratio = window.devicePixelRatio || 1;
+  const rect = wrap.getBoundingClientRect();
+  canvas.width = rect.width * ratio;
+  canvas.height = rect.height * ratio;
+  canvas.style.width = rect.width + "px";
+  canvas.style.height = rect.height + "px";
+  ctx = canvas.getContext("2d");
+  ctx.scale(ratio, ratio);
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  clearCanvas();
+}
+
+function clearCanvas(){
+  if (!ctx) return;
+  const canvas = $("#board");
+  ctx.save();
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.fillStyle = "#fffdf7";
+  ctx.fillRect(0,0,canvas.width, canvas.height);
+  ctx.restore();
+}
+
+function getPos(evt){
+  const canvas = $("#board");
+  const rect = canvas.getBoundingClientRect();
+  const point = evt.touches ? evt.touches[0] : evt;
+  return { x: point.clientX - rect.left, y: point.clientY - rect.top };
+}
+
+function startDraw(evt){
+  evt.preventDefault();
+  drawing = true;
+  const pos = getPos(evt);
+  lastX = pos.x; lastY = pos.y;
+  ctx.beginPath();
+  ctx.arc(pos.x, pos.y, (isEraser ? currentSize*1.8 : currentSize) / 2, 0, Math.PI*2);
+  ctx.fillStyle = isEraser ? "#fffdf7" : currentColor;
+  ctx.fill();
+}
+function moveDraw(evt){
+  if (!drawing) return;
+  evt.preventDefault();
+  const pos = getPos(evt);
+  ctx.strokeStyle = isEraser ? "#fffdf7" : currentColor;
+  ctx.lineWidth = isEraser ? currentSize*1.8 : currentSize;
+  ctx.beginPath();
+  ctx.moveTo(lastX, lastY);
+  ctx.lineTo(pos.x, pos.y);
+  ctx.stroke();
+  lastX = pos.x; lastY = pos.y;
+}
+function endDraw(){ drawing = false; }
+
+function wireCanvasEvents(){
+  const canvas = $("#board");
+  canvas.addEventListener("mousedown", startDraw);
+  canvas.addEventListener("mousemove", moveDraw);
+  window.addEventListener("mouseup", endDraw);
+  canvas.addEventListener("touchstart", startDraw, { passive:false });
+  canvas.addEventListener("touchmove", moveDraw, { passive:false });
+  canvas.addEventListener("touchend", endDraw);
+}
+wireCanvasEvents();
+window.addEventListener("resize", () => { if ($("#screen-play").classList.contains("active")) setupCanvas(); });
+
+$all(".swatch").forEach(sw => {
+  sw.addEventListener("click", () => {
+    $all(".swatch").forEach(s => s.classList.remove("selected"));
+    sw.classList.add("selected");
+    currentColor = sw.dataset.color;
+    isEraser = false;
+    $("#eraserBtn").classList.remove("selected");
+  });
+});
+$("#sizeRange").addEventListener("input", (e) => currentSize = parseInt(e.target.value, 10));
+$("#eraserBtn").addEventListener("click", () => {
+  isEraser = !isEraser;
+  $("#eraserBtn").classList.toggle("selected", isEraser);
+});
+$("#clearBtn").addEventListener("click", clearCanvas);
+
+/* =========================================================
+   CRONÓMETRO Y TURNO DE JUEGO
+   ========================================================= */
+function beginDrawing(){
+  state.roundResolved = false;
+  state.timeLeft = state.turnSeconds;
+  $("#playTurnTag").textContent = `Dibuja: ${state.players[state.currentDrawerIdx]}`;
+  $("#playCatLabel").textContent = WORD_BANK[state.currentCatKey].label;
+  $("#playWord").textContent = state.currentWord;
+  $("#timerLabel").textContent = state.timeLeft;
+  $("#timerLabel").classList.remove("warn");
+  showScreen("screen-play");
+  setupCanvas();
+
+  clearInterval(state.timer);
+  state.timer = setInterval(() => {
+    state.timeLeft--;
+    $("#timerLabel").textContent = state.timeLeft;
+    if (state.timeLeft <= 10) $("#timerLabel").classList.add("warn");
+    if (state.timeLeft <= 0){
+      clearInterval(state.timer);
+      resolveRound(false);
+    }
+  }, 1000);
+}
+
+function resolveRound(guessedCorrectly){
+  if (state.roundResolved) return;
+  state.roundResolved = true;
+  clearInterval(state.timer);
+
+  const drawerIdx = state.currentDrawerIdx;
+  if (guessedCorrectly){
+    state.scores[drawerIdx] += 1;
+  }
+  state.history.unshift(`${state.players[drawerIdx]} dibujó "${state.currentWord}" — ${guessedCorrectly ? "✔ acertaron" : "✘ no se adivinó"}`);
+  state.turnCount++;
+
+  // ¿Alguien ganó?
+  const winnerIdx = state.scores.findIndex(s => s >= state.pointsToWin);
+  if (winnerIdx !== -1){
+    showWinner(winnerIdx);
+    return;
+  }
+
+  $("#roundIcon").textContent = guessedCorrectly ? "🎉" : "⏱️";
+  $("#roundTitle").textContent = guessedCorrectly ? "¡Lo adivinaron!" : "¡Se acabó el tiempo!";
+  $("#roundWordWas").textContent = state.currentWord;
+  $("#roundScores").textContent = scorePillHTML();
+  showScreen("screen-roundend");
+
+  // el siguiente turno le toca dibujar al otro jugador
+  state.currentDrawerIdx = (state.currentDrawerIdx + 1) % state.players.length;
+}
+
+$("#correctBtn").addEventListener("click", () => resolveRound(true));
+$("#passTurnBtn").addEventListener("click", () => resolveRound(false));
+$("#nextRoundBtn").addEventListener("click", startTurnFlow);
+
+/* =========================================================
+   GANADOR
+   ========================================================= */
+function showWinner(winnerIdx){
+  $("#winnerName").textContent = `¡${state.players[winnerIdx]} gana! 🎉`;
+  $("#winnerDetail").textContent = `Marcador final — ${scorePillHTML()}`;
+  showScreen("screen-winner");
+}
+
+$("#playAgainBtn").addEventListener("click", () => {
+  state.scores = [0, 0];
+  state.usedWords = new Set();
+  state.turnCount = 0;
+  state.currentDrawerIdx = 0;
+  state.history = [];
+  startTurnFlow();
+});
+$("#backSetupBtn").addEventListener("click", () => showScreen("screen-setup"));

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Dibuja y Adivina — Local 2 Jugadores</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- ============ PANTALLA: INICIO / CONFIGURACIÓN ============ -->
+  <section id="screen-setup" class="screen active">
+    <div class="brand">
+      <div class="brand-pencil">✏️</div>
+      <h1>Dibuja y <span>Adivina</span></h1>
+    </div>
+
+    <div class="card">
+      <h2>Jugadores</h2>
+      <p class="muted" style="margin-bottom:12px;">Se van turnando el teléfono: uno dibuja, el otro adivina.</p>
+      <div class="players-row">
+        <input id="p1name" type="text" maxlength="14" placeholder="Jugador 1" value="Jugador 1">
+        <input id="p2name" type="text" maxlength="14" placeholder="Jugador 2" value="Jugador 2">
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Puntos para ganar</h2>
+      <span class="field-label">Elegí la meta de la partida</span>
+      <div class="chip-group" id="pointsGroup">
+        <button class="chip" data-val="10">10 pts</button>
+        <button class="chip selected" data-val="15">15 pts</button>
+        <button class="chip" data-val="20">20 pts</button>
+        <button class="chip" data-val="30">30 pts</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Tiempo por turno</h2>
+      <span class="field-label">Segundos para dibujar y adivinar</span>
+      <div class="chip-group" id="timeGroup">
+        <button class="chip" data-val="45">45 s</button>
+        <button class="chip selected" data-val="60">60 s</button>
+        <button class="chip" data-val="90">90 s</button>
+        <button class="chip" data-val="120">120 s</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Categorías</h2>
+      <span class="field-label">Tocá para activar o desactivar</span>
+      <div class="cat-grid" id="catGrid"></div>
+    </div>
+
+    <button class="btn btn-primary" id="startBtn" style="font-size:19px; padding:16px;">▶ Empezar partida</button>
+    <footer>Juego local, sin conexión, sin cuentas. Hecho para jugar entre dos, pasando el teléfono.</footer>
+  </section>
+
+  <!-- ============ PANTALLA: PASAR TELÉFONO ============ -->
+  <section id="screen-pass" class="screen">
+    <div class="pass-wrap">
+      <div class="pass-icon" id="passIcon">📱</div>
+      <div>
+        <div class="muted" style="margin-bottom:6px;">Turno de dibujar</div>
+        <h2>Pasale el teléfono a <span class="pass-name" id="passName">Jugador 1</span></h2>
+      </div>
+      <div class="score-pill" id="passScores"></div>
+      <button class="btn btn-accent" id="passReadyBtn" style="max-width:260px;">Ya lo tengo, ¡listo!</button>
+    </div>
+  </section>
+
+  <!-- ============ PANTALLA: VISTA PREVIA DE PALABRA (solo quien dibuja) ============ -->
+  <section id="screen-reveal" class="screen">
+    <div class="pass-wrap">
+      <div class="muted">Tu palabra es...</div>
+      <div class="word-banner" id="revealWord" style="font-size:26px; padding:20px;"></div>
+      <p class="muted">No le muestres la pantalla a quien adivina. Cuando empieces el cronómetro, dibujá sin usar letras ni números.</p>
+      <button class="btn btn-primary" id="goDrawBtn" style="max-width:260px;">Empezar a dibujar</button>
+      <button class="btn btn-ghost btn-sm" id="skipWordBtn">🔄 Cambiar palabra</button>
+    </div>
+  </section>
+
+  <!-- ============ PANTALLA: DIBUJAR / ADIVINAR ============ -->
+  <section id="screen-play" class="screen">
+    <div class="game-top">
+      <div class="turn-tag" id="playTurnTag">Dibuja: Jugador 1</div>
+      <div class="timer" id="timerLabel">60</div>
+    </div>
+
+    <div class="word-banner">
+      <span class="cat-label" id="playCatLabel">Objetos</span>
+      <span id="playWord">—</span>
+    </div>
+
+    <div class="canvas-wrap">
+      <canvas id="board"></canvas>
+    </div>
+
+    <div class="tools">
+      <button class="swatch selected" data-color="#2b2420" style="background:#2b2420"></button>
+      <button class="swatch" data-color="#b5542d" style="background:#b5542d"></button>
+      <button class="swatch" data-color="#2f6b4f" style="background:#2f6b4f"></button>
+      <button class="swatch" data-color="#2255a4" style="background:#2255a4"></button>
+      <button class="swatch" data-color="#d9a441" style="background:#d9a441"></button>
+      <div class="sep"></div>
+      <input type="range" class="size-range" id="sizeRange" min="2" max="22" value="6">
+      <div class="sep"></div>
+      <button class="tool-btn" id="eraserBtn" title="Goma">🧽</button>
+      <button class="tool-btn" id="clearBtn" title="Borrar todo">🗑️</button>
+    </div>
+
+    <div class="guess-row">
+      <button class="btn btn-ghost btn-sm" id="passTurnBtn">Pasar palabra</button>
+      <button class="btn btn-primary" id="correctBtn">✔ ¡Lo adivinó!</button>
+    </div>
+  </section>
+
+  <!-- ============ PANTALLA: RESULTADO DE RONDA ============ -->
+  <section id="screen-roundend" class="screen">
+    <div class="pass-wrap">
+      <div class="pass-icon" id="roundIcon">⏱️</div>
+      <h2 id="roundTitle">¡Se acabó el tiempo!</h2>
+      <p class="muted" id="roundSubtitle">La palabra era: <strong id="roundWordWas"></strong></p>
+      <div class="score-pill" id="roundScores"></div>
+      <button class="btn btn-primary" id="nextRoundBtn" style="max-width:260px;">Siguiente turno</button>
+    </div>
+  </section>
+
+  <!-- ============ PANTALLA: GANADOR ============ -->
+  <section id="screen-winner" class="screen">
+    <div class="winner-wrap">
+      <div class="trophy">🏆</div>
+      <h1 id="winnerName">¡Jugador 1 gana!</h1>
+      <p class="muted" id="winnerDetail"></p>
+      <button class="btn btn-primary" id="playAgainBtn" style="max-width:260px;">Jugar otra vez</button>
+      <button class="btn btn-ghost" id="backSetupBtn">Cambiar configuración</button>
+    </div>
+  </section>
+
+</div>
+<script src="js/words.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>

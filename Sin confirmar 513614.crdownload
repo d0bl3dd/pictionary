@@ -1,0 +1,53 @@
+/* =========================================================
+   BANCO DE PALABRAS — 4 categorías, estilo clásico de dibujar y adivinar
+   ========================================================= */
+const WORD_BANK = {
+  personas: {
+    label: "Personas, animales y lugares",
+    words: [
+      "Bombero","Astronauta","Pirata","Bailarina","Cocinero","Payaso","Policía","Profesor",
+      "Abuela","Bebé","Sirena","Vampiro","Fantasma","Robot","Superhéroe","Mago",
+      "Perro","Gato","Elefante","Jirafa","Pingüino","Canguro","Tiburón","Murciélago",
+      "Pulpo","Camello","Cocodrilo","Mariposa","Araña","Búho","Loro","Caballo",
+      "Playa","Montaña","Desierto","Castillo","Volcán","Granja","Ciudad","Selva",
+      "Isla","Cueva","Iglesia","Estadio","Aeropuerto","Biblioteca","Cementerio","Circo",
+      "Oso panda","Koala","Delfín","Flamenco","Erizo","Dinosaurio","Unicornio","Dragón"
+    ]
+  },
+  objetos: {
+    label: "Objetos",
+    words: [
+      "Paraguas","Bicicleta","Computador","Reloj","Silla","Guitarra","Tijeras","Llave",
+      "Lámpara","Espejo","Maleta","Cámara","Teléfono","Zapato","Sombrero","Anteojos",
+      "Cepillo de dientes","Tenedor","Olla","Escoba","Martillo","Destornillador","Cinturón","Billetera",
+      "Mochila","Paraguas roto","Cafetera","Horno","Nevera","Ventilador","Plancha","Microondas",
+      "Globo","Vela","Linterna","Brújula","Mapa","Carpa","Escalera","Candado",
+      "Jeringa","Termómetro","Balanza","Bufanda","Guantes","Casco","Pelota","Cometa",
+      "Ancla","Timón","Hacha","Pala","Regadera","Tetera","Frasco","Tambor"
+    ]
+  },
+  acciones: {
+    label: "Acciones",
+    words: [
+      "Nadar","Bailar","Dormir","Correr","Saltar","Llorar","Reír","Cantar",
+      "Cocinar","Estudiar","Pescar","Escalar","Conducir","Volar","Nadar bajo el agua","Aplaudir",
+      "Estornudar","Bostezar","Pelear","Abrazar","Besar","Gritar","Susurrar","Esconderse",
+      "Patinar","Surfear","Esquiar","Remar","Bucear","Acampar","Pintar","Dibujar",
+      "Tejer","Cepillarse el pelo","Lavar los platos","Planchar","Afeitarse","Maquillarse","Meditar","Rezar",
+      "Pelar una fruta","Hacer ejercicio","Levantar pesas","Hacer yoga","Jugar ajedrez","Tocar el piano","Escalar una montaña","Hacer trampa",
+      "Robar","Votar","Casarse","Mudarse","Graduarse","Discutir","Negociar","Reconciliarse"
+    ]
+  },
+  dificil: {
+    label: "Difícil",
+    words: [
+      "Nostalgia","Libertad","Justicia","Envidia","Esperanza","Soledad","Paciencia","Confianza",
+      "Democracia","Inflación","Gravedad","Electricidad","Fotosíntesis","Evolución","Reciclaje","Contaminación",
+      "Gentrificación","Procrastinar","Déjà vu","Karma","Destino","Coincidencia","Imaginación","Creatividad",
+      "Insomnio","Ansiedad","Adicción","Burocracia","Corrupción","Diplomacia","Globalización","Inteligencia artificial",
+      "Criptomoneda","Metaverso","Streaming","Algoritmo","Viralizar","Procrastinación","Meditación","Introspección",
+      "Autoestima","Empatía","Ironía","Sarcasmo","Paradoja","Simetría","Infinito","Tiempo",
+      "Silencio incómodo","Resaca","Jet lag","Síndrome del impostor","Crisis de los 30","Amor a primera vista","Flechazo","Despecho"
+    ]
+  }
+};
